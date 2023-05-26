@@ -19,11 +19,6 @@ def predict_genres(year, title, plot, rating):
     vectorizer = joblib.load(os.path.dirname(__file__) + '/vectorizer.pkl')
     mlb = joblib.load(os.path.dirname(__file__) + '/mlb.pkl')
     
-    columns = ['plot']
-    data = [['plot']]
-    df = pd.DataFrame(data, columns=columns)
-    df.index.name = 'ID'
-
     stopwordlist = ['a', 'about', 'above', 'after', 'again', 'ain', 'all', 'am', 'an',
              'and','any','are', 'as', 'at', 'be', 'because', 'been', 'before',
              'being', 'below', 'between','both', 'by', 'can', 'd', 'did','didnt', 'do',
@@ -57,23 +52,29 @@ def predict_genres(year, title, plot, rating):
         lemmatized_plot = ' '.join(lemmas)
     
         return lemmatized_plot
-
-    df['plot'] = df['plot'].apply(preprocess_plot)
     
     
-    X = vectorizer.transform(df['plot'])
+    # Preprocesar el argumento de la película
+    preprocessed_plot = preprocess_plot(plot)
     
-    #Prediccion
-    predictions = lr.predict(X[0])
+    # Crear el dataframe para predecir la película
+    movie_data = pd.DataFrame({'year': [year], 'title': [title], 'plot': [preprocessed_plot], 'rating': [rating]})
     
-    cols = ['p_Action', 'p_Adventure', 'p_Animation', 'p_Biography', 'p_Comedy', 'p_Crime', 'p_Documentary', 'p_Drama', 'p_Family',
-        'p_Fantasy', 'p_Film-Noir', 'p_History', 'p_Horror', 'p_Music', 'p_Musical', 'p_Mystery', 'p_News', 'p_Romance',
-        'p_Sci-Fi', 'p_Short', 'p_Sport', 'p_Thriller', 'p_War', 'p_Western']
+    # Transformar los datos de la película usando el vectorizador TF-IDF
+    movie_data_dtm = vectorizer.transform(movie_data['plot'])
     
-    predicted_genres = pd.DataFrame(predictions, columns=cols)
-
+    # Realizar la predicción de los géneros de la película
+    genre_predictions = lr.predict_proba(movie_data_dtm)
     
-    return predictions
+    # Obtener los géneros con mayor probabilidad de predicción
+    top_genre_indices = np.argsort(genre_predictions[0])[::-1][:4]
+    top_genres = mlb.classes_[top_genre_indices]
+    top_probabilities = genre_predictions[0][top_genre_indices]
+    
+    # Crear un diccionario con los géneros y sus probabilidades
+    genre_predictions_dict = {genre: probability for genre, probability in zip(top_genres, top_probabilities)}
+    
+    return genre_predictions_dict
 
 
 if __name__ == "__main__":

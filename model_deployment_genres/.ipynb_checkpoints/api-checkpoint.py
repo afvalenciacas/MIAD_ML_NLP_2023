@@ -2,7 +2,7 @@
 from flask import Flask
 from flask_restplus import Api, Resource, fields
 import joblib
-from m09_model_deployment import predict_genre
+from mp2_model_deployment import predict_genre
 
 app = Flask(__name__)
 
@@ -15,28 +15,42 @@ api = Api(
 ns = api.namespace('predict', 
      description='Clasificador de géneros')
 
+parser = api.parser()
+
+parser.add_argument(
+    'year',
+    type = int,
+    required = True
+)
+parser.add_argument(
+    'title',
+    type = str,
+    required = True
+)
+parser.add_argument(
+    'plot',
+    type = str,
+    required = True
+)
+parser.add_argument(
+    'rating',
+    type = float,
+    required = True
+)
+
 resource_fields = api.model('Resource', {
     'result': fields.String,
 })
 
 @ns.route('/')
-class GenresApi(Resource):
-
-    @api.expect(api.parser().add_argument('year', type=int, required=True))
-    @api.expect(api.parser().add_argument('title', type=str, required=True))
-    @api.expect(api.parser().add_argument('plot', type=str, required=True))
-    @api.expect(api.parser().add_argument('rating', type=float, required=True))
+class PhishingApi(Resource):
+    @api.doc(parser=parser)
     @api.marshal_with(resource_fields)
-    def post(self):
-        args = api.payload
-        year = args['year']
-        title = args['title']
-        plot = args['plot']
-        rating = args['rating']
-        
+    def get(self):
+        args = parser.parse_args()
         return {
-            "result": predict_genres(year, title, plot, rating)
-        }, 200
+            "result": predict_genres(args['year'], args['title'], args['plot'], args['rating'])
+            }, 200
     
     
 if __name__ == '__main__':
