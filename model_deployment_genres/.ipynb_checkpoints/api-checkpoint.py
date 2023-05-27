@@ -2,7 +2,7 @@
 from flask import Flask
 from flask_restx import Api, Resource, fields
 import joblib
-from mp2_model_deployment import predict_genre
+from mp2_model_deployment import predict_genres
 
 app = Flask(__name__)
 
